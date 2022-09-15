@@ -2,7 +2,7 @@
 -compile(export_all).
 
 start() ->
-    register(sub, spawn(?MODULE, benchmark, ['fault@gpgnode-01', 0])).
+    register(sub, spawn(?MODULE, benchmark, ['<InjectorVM>@<InjectorNode>', 0])).
 
 benchmark(FNode, SystemPid) ->
     receive

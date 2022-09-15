@@ -1,9 +1,6 @@
 -module(faultInjector).
 -compile(export_all).
 
--define(Sub_Node, 'sub@').
-
-
 start(Mode) ->
     register(injector, spawn(faultInjector, injector, [Mode, []])).
 
@@ -146,7 +143,7 @@ burstKill([S1 | SupList], N) ->
 killProcess(Sup) ->
     PList = supervisor:which_children(Sup),
     {_, Target, _, _} = lists:nth(rand:uniform(length(PList)), PList),
-    Status = rpc:call('sub@gpgnode-02', erlang, is_process_alive, [Target]),
+    Status = rpc:call('<SubVM>@<SubNode>', erlang, is_process_alive, [Target]),
     
     if
         Status ->

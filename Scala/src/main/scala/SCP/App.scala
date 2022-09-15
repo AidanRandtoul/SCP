@@ -16,15 +16,15 @@ object App {
             case "inject" =>
                 var mode = args(1)
                 val config = ConfigFactory.parseString(s"""
-                akka.remote.artery.canonical.hostname=130.209.255.1
-                akka.remote.artery.canonical.port=25251
+                akka.remote.artery.canonical.hostname=<SubIP>
+                akka.remote.artery.canonical.port=<SubPort>
                 """).withFallback(ConfigFactory.load())
 
                 val system: ActorSystem[InjectorMain.InjectorParams] = ActorSystem(InjectorMain(mode), "Cluster", config)
             case "process" =>
                 val config = ConfigFactory.parseString(s"""
-                akka.remote.artery.canonical.hostname=130.209.255.2
-                akka.remote.artery.canonical.port=25252
+                akka.remote.artery.canonical.hostname=<InjectorIP>
+                akka.remote.artery.canonical.port=<InjectorPort>
                 """).withFallback(ConfigFactory.load())
 
                 val system: ActorSystem[SCPMain.SystemParams] = ActorSystem(SCPMain(), "Cluster", config)
