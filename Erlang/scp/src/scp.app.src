@@ -1,0 +1,20 @@
+{application, scp,
+ [{description, "An OTP application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {scp_app, []}},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, [
+            scp,
+            scp_app,
+            scp_sup,
+            scp_pair,
+            scp_counter]},
+
+  {licenses, ["Apache-2.0"]},
+  {links, []}
+ ]}.

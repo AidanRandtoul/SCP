@@ -1,4 +1,4 @@
--module(benchmark).
+-module(scp).
 -compile(export_all).
 
 start() ->
