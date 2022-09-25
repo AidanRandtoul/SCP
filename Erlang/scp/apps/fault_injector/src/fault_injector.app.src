@@ -1,19 +1,17 @@
-{application, scp,
+{application, fault_injector,
  [{description, "An OTP application"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, {scp_app, []}},
+  {mod, {fault_injector_app, []}},
   {applications,
    [kernel,
     stdlib
    ]},
   {env,[]},
   {modules, [
-            scp,
-            scp_app,
-            scp_sup,
-            scp_pair,
-            scp_counter]},
+            killer,
+            fault_injector,
+            fault_injector_app]},
 
   {licenses, ["Apache-2.0"]},
   {links, []}

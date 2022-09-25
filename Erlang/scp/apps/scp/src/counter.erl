@@ -1,4 +1,4 @@
--module(scp_counter).
+-module(counter).
 
 -export([spawn_counter/0]).
 

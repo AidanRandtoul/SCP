@@ -3,11 +3,11 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(scp_sub_sup).
+-module(head_supervisor).
 
 -behaviour(supervisor).
 
--export([start_link/0]).
+-export([start_child/1, start_link/0]).
 
 -export([init/1]).
 
@@ -15,6 +15,9 @@
 
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+start_child(Args) ->
+    supervisor:start_child(?MODULE, Args).
 
 %% sup_flags() = #{strategy => strategy(),         % optional
 %%                 intensity => non_neg_integer(), % optional
@@ -25,11 +28,19 @@ start_link() ->
 %%                  shutdown => shutdown(), % optional
 %%                  type => worker(),       % optional
 %%                  modules => modules()}   % optional
-init([]) ->
+
+init(_) ->
     SupFlags = #{strategy => one_for_one,
-                 intensity => 0,
+                 intensity => 100,
                  period => 1},
-    ChildSpecs = [],
-    {ok, {SupFlags, ChildSpecs}}.
+    {ok, {SupFlags, child_specs()}}.
 
 %% internal functions
+
+child_specs() ->
+    [#{id => undefined,
+       start => {ftp, start_link, []},
+       restart => temporary,
+       shutdown => 4000,
+       type => worker,
+       modules => [ftp]}].

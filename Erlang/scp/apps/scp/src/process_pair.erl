@@ -1,4 +1,4 @@
--module(scp_pair).
+-module(process_pair).
 
 -export([spawn_server/2, spawn_client/0]).
 
