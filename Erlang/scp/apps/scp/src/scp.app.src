@@ -11,8 +11,8 @@
   {modules, [
             scp,
             scp_app,
-            head_supervisor,
-            sub_supervisor,
+            head_sup,
+            sub_sup,
             process_pair,
             counter]},
 

@@ -1,13 +1,16 @@
 -module(scp).
--compile(export_all).
+
+-export([start/0, benchmark/2, start_system/4]).
+
+-export([counter_spec/0]).
 
 start() ->
     register(sub, spawn(?MODULE, benchmark, ['<InjectorVM>@<InjectorNode>', 0])).
 
 benchmark(FNode, SystemPid) ->
     receive
-        {"Start", NPairs, NSups, NFails, SupStrat} ->
-            Pid = startSystem(NPairs, NSups, NFails, SupStrat, FNode),
+        {"Start", NPairs, NSups, NFails} ->
+            Pid = start_system(NPairs, NSups, NFails, FNode),
             benchmark(FNode, Pid);
         "Stop" ->
             counter ! "Stop",
@@ -20,52 +23,36 @@ benchmark(FNode, SystemPid) ->
             io:format("Unknown command received!~n")
     end.
 
-startSystem(NumPairs, NumSupervisors, NFailures, SupStrat, FNode) ->
-    TotalPairs = NumPairs*NumSupervisors,
+start_system(NumPairs, NumSups, FailureRate, InjectorNode) ->
+    TotalPairs = NumPairs*NumSups,
+
     StartTime = erlang:system_time(millisecond),
-    {ok, HeadSupName} = processSup:start_link({headSupervisor, {SupStrat, [genChildSpec(counter, spawnCounter, [])]}}),
-    [{_, Counter, _, _}] = supervisor:which_children(HeadSupName),
-    Children = [genChildSpec(genName("server", N), spawnServer, [Counter, bytes_generate(500)]) || N <- lists:seq(1, NumPairs)],
-    SupervisorList = [spawnSupervisor(HeadSupName, SupStrat, Children, N) || N <- lists:seq(1, NumSupervisors)],
+
+    % Create top level supervisor
+    {ok, HeadSupPid} = head_sup:start_link(NumPairs, NumSups),
+    SupList = [ SupPid || {_, SupPid, _, _} <- supervisor:which_children(HeadSupPid)],
+
+    head_supervisor:start_child(HeadSupPid, counter_spec()),
+
     ElapsedTime = erlang:system_time(millisecond) - StartTime,
     io:format("~p Process Pairs spawned and started in ~p seconds.~n", [TotalPairs, ElapsedTime/1000]),
     io:format("Starting benchmark!~n"),
+
     if
-        NFailures =/= 0 ->
-            {injector, FNode} ! {"Start", SupervisorList, trunc(TotalPairs*5*(NFailures/100))},
+        FailureRate =/= 0 ->
+            {injector, InjectorNode} ! {"Start", SupList, trunc(TotalPairs*5*(FailureRate))},
             timer:sleep(5000);
         true -> ok   
     end,
-    Counter ! "Start",
-    HeadSupName.  
+    counter ! "Start",
+    HeadSupPid.  
 
-spawnSupervisor(HeadSup, SupStrategy, ChildList, SupervisorNum) ->
-    NewName = genName("subSupervisor", SupervisorNum),
-    {ok, NewSup} = supervisor:start_child(HeadSup, genSupervisorSpec(NewName, [{NewName, {SupStrategy, ChildList}}])),
-    NewSup.
 
-genSupervisorSpec(Name, Args) ->
-    #{id => Name, 
-    start => {processSup, start_link, Args},
-    restart => transient, 
-    type => supervisor, 
-    modules => [processSup]}.
+% internal functions
 
-genChildSpec(Name, Spawner, Args) ->
-    #{id => Name,
-    start => {processSpec, Spawner, Args},
+counter_spec() -> 
+    #{id => counter,
+    start => {counter, spawn_counter, []},
     restart => transient,
     type => worker,
-    modules => [processSpec]}.
-
-bytes_generate(Size) ->
-    bytes_generate(Size, []).
-
-bytes_generate(0, Bytes) ->
-    list_to_binary(Bytes);
-
-bytes_generate(Size, Bytes) ->
-    bytes_generate(Size - 1, [1 | Bytes]).
-
-genName(Type, N) ->
-    list_to_atom(string:concat(Type, integer_to_list(N))).
+    modules => [counter]}.

@@ -3,18 +3,22 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(sub_supervisor).
+-module(head_sup).
 
 -behaviour(supervisor).
 
--export([start_link/0]).
+-export([start_child/1, start_link/1]).
 
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
+-define(CHILD(N, NumPairs), {gen_name("sub_sup_", N), {sub_sup, start_link, [N, NumPairs]}, transient, supervisor, [sub_sup]}).
 
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(Args) ->
+    supervisor:start_link({local, head_sup}, ?MODULE, [Args]).
+
+start_child(Args) ->
+    supervisor:start_child(?MODULE, Args).
 
 %% sup_flags() = #{strategy => strategy(),         % optional
 %%                 intensity => non_neg_integer(), % optional
@@ -25,11 +29,20 @@ start_link() ->
 %%                  shutdown => shutdown(), % optional
 %%                  type => worker(),       % optional
 %%                  modules => modules()}   % optional
-init([]) ->
+
+init(Args) ->
+
+    {NumPairs, NumSups} = Args,
+
     SupFlags = #{strategy => one_for_one,
-                 intensity => 0,
+                 intensity => 100,
                  period => 1},
-    ChildSpecs = [],
-    {ok, {SupFlags, ChildSpecs}}.
+
+    Children = [ ?CHILD(N, NumPairs) || N <- list:seq(1, NumSups) ],
+
+    {ok, {SupFlags, Children}}.
 
 %% internal functions
+
+gen_name(Type, N) ->
+    list_to_atom(string:concat(Type, integer_to_list(N))).
